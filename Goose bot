@@ -1,0 +1,400 @@
+import discord
+from discord.ext import commands
+from discord.ext.commands import Bot
+import asyncio
+import random
+from discord.utils import get
+import praw
+
+
+
+#HELP commands
+
+bot = commands.Bot(command_prefix='G ')
+bot.remove_command("help")
+
+@bot.group(invoke_without_command=True)
+async def help(ctx):
+    em = discord.Embed(title = "Help", description = "Use g help <command> for extended information on a command.",color = ctx.author.color)
+
+    em.add_field(name = "Moderation", value = "kick, ban, clear")
+    em.add_field(name = "Fun", value = "8ball, gifs, images, msgs")
+
+    await ctx.send(embed = em)
+
+filtered_words = ["enter word here"]
+
+#help commands
+@help.command()
+async def kick(ctx):
+
+    em = discord.Embed(title = "Kick", description = "Kicks a member from server",color = ctx.author.color)
+    em.add_field(name = "example", value = "g kick <member> [reason]")
+
+    await ctx.send(embed = em)
+
+@help.command()
+async def ban(ctx):
+
+    em = discord.Embed(title = "Ban", description = "Bans a member from server",color = ctx.author.color)
+    em.add_field(name = "example", value = "g ban <member> [reason]")
+
+    await ctx.send(embed = em)
+
+@help.command()
+async def eightball(ctx):
+
+    em = discord.Embed(title = "8ball", description = "Tells you the answer of every question you ask",color = ctx.author.color)
+    em.add_field(name = "example", value = "g 8ball am i dumb?")
+
+    await ctx.send(embed = em)
+
+@help.command()
+async def gifs(ctx):
+
+    em = discord.Embed(title = "Gifs", description = "Sends various types of gifs",color = ctx.author.color)
+    em.add_field(name = "example", value = "g eat")
+    em.add_field(name = "commands", value = "eat, morning, glasses, dance, run, fbi, flip, villanlaugh, gooseday, gae, spin, derstandable, ")
+
+    await ctx.send(embed = em)
+
+@help.command()
+async def subreddit(ctx):
+
+    em = discord.Embed(title = "Subreddits", description = "Shows random post from specific subreddit",color = ctx.author.color)
+    em.add_field(name = "example", value = "g cursed")
+    em.add_field(name = "commands", value = "meme, cursed, bossfight")
+
+    await ctx.send(embed = em)
+
+@help.command()
+async def msgs(ctx):
+
+    em = discord.Embed(title = "Msgs", description = "Replies to users msg",color = ctx.author.color)
+    em.add_field(name = "example", value = "g ello")
+    em.add_field(name = "commands", value = "ello, pingme, king")
+    await ctx.send(embed = em)
+
+@help.command()
+async def images(ctx):
+
+    em = discord.Embed(title = "Images", description = "Sends images based on command",color = ctx.author.color)
+    em.add_field(name = "example", value = "g hey")
+    em.add_field(name = "commands", value = "hey, dafaq, joy, da, segs, goodboi")
+
+    await ctx.send(embed = em)
+
+
+
+#main bot
+
+@bot.event
+async def on_ready():
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name='with yo mama'))
+    print ("Ready when you are")
+    print ("I am online")
+
+
+@bot.event
+async def on_message(msg):
+    for word in filtered_words:
+        if word in msg.content:
+            await msg.delete()
+
+    await bot.process_commands(msg)
+
+@bot.event
+async def on_message(message):
+    mention = f'<@!{bot.user.id}>'
+    if mention in message.content:
+        await message.channel.send("My prefix is g \n Ya can type g help for more info")
+    await bot.process_commands(message)
+
+
+
+#working commands
+
+@bot.command()
+@commands.has_permissions(manage_messages = True)
+async def clear(ctx, amount=5):
+    await ctx.channel.purge(limit=amount)
+
+@bot.command()
+async def join(ctx):
+    channel = ctx.author.voice.channel
+    await channel.connect()
+
+@bot.command()
+async def leave(ctx):
+    await ctx.voice_client.disconnect()
+
+@bot.command()
+@commands.has_permissions(kick_members = True)
+async def kick(ctx, member : discord.Member, *, reason=None):
+    await member.kick(reason=reason)
+
+@bot.command()
+@commands.has_permissions(ban_members = True)
+async def ban(ctx, member : discord.Member, *, reason=None):
+    await member.ban(reason=reason)
+
+@bot.command()
+@commands.has_permissions(ban_members = True)
+async def unban(ctx,*,member):
+    banned_users = await ctx.guild.bans()
+    member_name, member_disc = member.split('#')
+
+    for banned_entry in banned_users:
+        user = banned_entry.user
+
+        if(user.name, user.discriminator)==(member_name,member_disc):
+
+            await ctx.guild.unban(user)
+            await ctx.send(member_name +" member has been unbanned!")
+            return
+    await ctx.send(member+" was not found")
+
+@bot.command()
+@commands.has_permissions(manage_messages = True)
+async def mute(ctx,member : discord.Member):
+    muted_role = ctx.guild.get_role(898551131012227142)
+
+    await member.add_roles(muted_role)
+
+    await ctx.send(member.mention + " has been muted" )
+
+@bot.command()
+@commands.has_permissions(manage_messages = True)
+async def unmute(ctx,member : discord.Member):
+    muted_role = ctx.guild.get_role(898551131012227142)
+
+    await member.remove_roles(muted_role)
+
+    await ctx.send(member.mention + " has been unmuted" )
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def ping(ctx):
+    await ctx.send(f'Pong! {round(bot.latency * 1000)}ms')
+
+
+
+@bot.command(aliases=['8ball'])
+async def _8ball(ctx, *, question):
+  responses = [
+  discord.Embed(title='It is certain.'),
+  discord.Embed(title='It is decidedly so.'),
+  discord.Embed(title='Without a doubt.'),
+  discord.Embed(title='Yes - definitely.'),
+  discord.Embed(title='You may rely on it.'),
+  discord.Embed(title='Most likely.'),
+  discord.Embed(title='Outlook good.'),
+  discord.Embed(title='Yes.'),
+  discord.Embed(title='Signs point to yes.'),
+  discord.Embed(title='Reply hazy, try again.'),
+  discord.Embed(title='Ask again later.'),
+  discord.Embed(title='Better not tell you now.'),
+  discord.Embed(title='Cannot predict now.'),
+  discord.Embed(title='Concentrate and ask again.'),
+  discord.Embed(title="Don't count on it."),
+  discord.Embed(title='My reply is no.'),
+  discord.Embed(title='My sources say no.'),
+  discord.Embed(title='Outlook not very good.'),
+  discord.Embed(title='Very doubtful.')
+    ]
+  responses = random.choice(responses)
+  await ctx.send(content=f'Question: {question}\nAnswer:', embed=responses)
+
+
+
+#msg commands
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def ello(ctx):
+        await ctx.send("Honk!")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def king(ctx):
+        await ctx.send("all hail ~~retard~~ i mean lord " + ctx.author.mention)
+
+@bot.command(name='pingme', help='pings the author of the message')
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def pingme(ctx):
+	await ctx.send(ctx.author.mention)
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def eat(ctx):
+        await ctx.send("https://media.discordapp.net/attachments/710406011197849651/860483845894963220/853112168441970719.gif")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def morning(ctx):
+        await ctx.send("https://tenor.com/view/goose-morning-goose-morning-good-morning-fif-gif-21001681")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def glasses(ctx):
+        await ctx.send("https://tenor.com/view/deal-with-it-sunglasses-cool-look-human-duck-gif-16337293")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def dance(ctx):
+        await ctx.send("https://tenor.com/view/goose-dance-moves-happy-gif-5453422")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def run(ctx):
+        await ctx.send("http://media.giphy.com/media/10v8tofbl9VAt2/giphy.gif")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def fbi(ctx):
+        await ctx.send("https://media0.giphy.com/media/xT39CZ1aM1WB0dZwOY/200.gif?cid=790b7611n6yhjx8mmtbqcyinv0krpkir0qzj74zhtpzrj0w8&rid=200.gif")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def flip(ctx):
+        await ctx.send("https://media.giphy.com/media/3oEduNndq6zu7UresU/giphy.gif")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def invite(ctx):
+        await ctx.send("https://discord.com/api/oauth2/authorize?client_id=861209011981123605&permissions=51200&scope=bot")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def gooseday(ctx):
+        await ctx.send("https://tenor.com/view/goose-day-amigos-goose-day-amigos2-have-a-goose-day-gif-23078780")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def villanlaugh(ctx):
+        await ctx.send("https://tenor.com/view/goose-monocle-gif-4546877")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def gae(ctx):
+        await ctx.send("https://tenor.com/view/whyareyougay-uganda-gay-gif-14399349")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def spin(ctx):
+        await ctx.send("https://tenor.com/view/happy-anime-cool-spin-spinning-gif-18387627")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def derstandable(ctx):
+        await ctx.send("https://tenor.com/view/cat-broken-cat-cat-drinking-cat-licking-cat-air-gif-20661740")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def joy(ctx):
+    await ctx.send("https://cdn.discordapp.com/attachments/898167949196677120/898168053521592361/keqjoy.png")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def hey(ctx):
+    await ctx.send("https://cdn.discordapp.com/attachments/898167949196677120/898168078452543488/goose.jpg")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def goodboi(ctx):
+    await ctx.send("https://cdn.discordapp.com/attachments/898167949196677120/971747529970577508/IMG_20220505_113802.jpg")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def segs(ctx):
+    await ctx.send("https://cdn.discordapp.com/attachments/898167949196677120/971747557367775272/IMG_20220505_104445.jpg")
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        msg = '**Still on cooldown**, please try again in {:.2f}s'.format(error.retry_after)
+        await ctx.send(msg)
+
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def dafaq(ctx):
+    await ctx.send("https://cdn.discordapp.com/attachments/898167949196677120/898168029354016788/dafaq.jpeg")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def da(ctx):
+    await ctx.send("https://cdn.discordapp.com/attachments/898167949196677120/898168008973877308/da.png")
+
+
+#reddit
+
+reddit = praw.Reddit(client_id = "tbhKdzBB5pZCbA_eGpr-fw",
+                    client_secret = "KTMD1ab8hdVp3AD7Z43XE408NkjIYQ",
+                    username = "Oweshkhan1234",
+                    password = "5102005786",
+                    user_agent = "pythonpraw")
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def meme(ctx):
+    subreddit = reddit.subreddit("memes")
+    all_subs = []
+    top = subreddit.top(limit = 250)
+    for submission in top:
+        all_subs.append(submission)
+
+    random_sub = random.choice(all_subs)
+
+    name = random_sub.title
+    url = random_sub.url
+
+    em = discord.Embed(title = name)
+
+    em.set_image(url = url)
+
+    await ctx.send(embed= em)
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def cursed(ctx):
+    subreddit = reddit.subreddit("cursed_images")
+    all_subs = []
+    top = subreddit.top(limit = 250)
+    for submission in top:
+        all_subs.append(submission)
+
+    random_sub = random.choice(all_subs)
+
+    name = random_sub.title
+    url = random_sub.url
+
+    em = discord.Embed(title = name)
+
+    em.set_image(url = url)
+
+    await ctx.send(embed= em)
+
+@bot.command()
+@commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+async def bossfight(ctx):
+    subreddit = reddit.subreddit("bossfights")
+    all_subs = []
+    top = subreddit.top(limit = 250)
+    for submission in top:
+        all_subs.append(submission)
+
+    random_sub = random.choice(all_subs)
+
+    name = random_sub.title
+    url = random_sub.url
+
+    em = discord.Embed(title = name)
+
+    em.set_image(url = url)
+
+    await ctx.send(embed= em)
+
+#TOKEN
+
+bot.run("ODYxMjA5MDExOTgxMTIzNjA1.YOGdZA.mdMlQ20K2QeIdbaOSfxViciwJVc")
