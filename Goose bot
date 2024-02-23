@@ -329,10 +329,10 @@ async def da(ctx):
 
 #reddit
 
-reddit = praw.Reddit(client_id = "tbhKdzBB5pZCbA_eGpr-fw",
-                    client_secret = "KTMD1ab8hdVp3AD7Z43XE408NkjIYQ",
-                    username = "Oweshkhan1234",
-                    password = "5102005786",
+reddit = praw.Reddit(client_id = "client_id",
+                    client_secret = "client secret",
+                    username = "Reddit_username",
+                    password = "Reddit_pass",
                     user_agent = "pythonpraw")
 
 @bot.command()
@@ -397,4 +397,4 @@ async def bossfight(ctx):
 
 #TOKEN
 
-bot.run("ODYxMjA5MDExOTgxMTIzNjA1.YOGdZA.mdMlQ20K2QeIdbaOSfxViciwJVc")
+bot.run("Token")
